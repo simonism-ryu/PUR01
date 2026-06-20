@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>공정 가동률 대시보드 | OGK Korea</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<style>
+:root { --bg-base:#E8EEF5; --text-main:#334155; --text-muted:#64748b; --accent:#38bdf8;
+  --ogk-dark:#041527; --ogk-navy:#002D4B; --ogk-cyan:#009AB8; --ogk-lime:#B8D544;
+  --ogk-amber:#d97706; --ogk-red:#C0392B;
+  --glass-bg:rgba(255,255,255,0.45); --glass-bg-inner:rgba(255,255,255,0.6);
+  --glass-border:rgba(255,255,255,0.8); --glass-border-inner:rgba(255,255,255,0.6);
+  --glass-shadow:0 16px 40px rgba(15,23,42,0.08); }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg-base); color:var(--text-main); font-family:'Pretendard Variable','Pretendard',sans-serif; min-height:100vh; padding:32px; position:relative; }
+.mesh-background { position:fixed; inset:0; z-index:-1; overflow:hidden; background:var(--bg-base); }
+.blob { position:absolute; border-radius:50%; filter:blur(80px); opacity:0.55; animation:float 20s infinite ease-in-out alternate; }
+.blob-1 { top:-10%; left:-5%; width:50vw; height:50vw; background:var(--ogk-navy); }
+.blob-2 { bottom:-10%; right:-5%; width:40vw; height:40vw; background:var(--ogk-cyan); animation-delay:-5s; }
+.blob-3 { top:30%; right:15%; width:25vw; height:25vw; background:var(--ogk-lime); opacity:0.35; animation-delay:-8s; }
+.blob-4 { bottom:20%; left:20%; width:30vw; height:30vw; background:var(--accent); opacity:0.4; animation-delay:-12s; }
+@keyframes float { 0% {transform:translate(0,0) scale(1);} 50% {transform:translate(5%,5%) scale(1.1);} 100% {transform:translate(-5%,-5%) scale(0.9);} }
+.container { max-width:1400px; margin:0 auto; background:var(--glass-bg); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid var(--glass-border); border-radius:32px; box-shadow:var(--glass-shadow); padding:40px; }
+.header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:16px; }
+.text-logo { font-size:22px; font-weight:800; color:var(--ogk-dark); }
+.header-right { display:flex; align-items:center; gap:10px; }
+.header-meta { font-size:14px; font-weight:500; background:rgba(255,255,255,0.5); padding:8px 16px; border-radius:20px; border:1px solid var(--glass-border-inner); }
+.download-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--ogk-navy); color:white; border-radius:20px; text-decoration:none; font-size:13px; font-weight:600; border:none; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 12px rgba(0,45,75,0.25); }
+.download-btn:hover { background:var(--ogk-cyan); transform:translateY(-1px); }
+.download-btn .material-icons-round { font-size:18px; }
+.refresh-btn { background:var(--ogk-cyan); }
+.refresh-btn:hover { background:var(--ogk-navy); }
+.title-section { margin-bottom:28px; }
+.main-title { font-size:38px; font-weight:800; letter-spacing:-0.03em; background:linear-gradient(135deg,#1e293b,#0f172a); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.sub-title { font-size:16px; color:var(--text-muted); font-weight:500; margin-top:6px; }
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.inner-card { background:var(--glass-bg-inner); border:1px solid var(--glass-border-inner); border-radius:20px; padding:24px; transition:transform 0.2s, box-shadow 0.2s; }
+.inner-card:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(15,23,42,0.08); background:rgba(255,255,255,0.7); }
+.card-label { font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--text-muted); text-transform:uppercase; display:flex; align-items:center; gap:6px; }
+.card-label i.dot { width:8px; height:8px; border-radius:50%; background:var(--ogk-cyan); display:inline-block; }
+.kpi-value { font-size:32px; font-weight:800; color:var(--ogk-dark); margin-top:8px; }
+.kpi-value span.unit { font-size:16px; font-weight:500; color:var(--text-muted); margin-left:4px; }
+.kpi-sub { font-size:12px; color:var(--text-muted); margin-top:6px; }
+.row { display:grid; gap:16px; margin-bottom:24px; }
+.row-2-1 { grid-template-columns:2fr 1fr; }
+.row-1-1 { grid-template-columns:1fr 1fr; }
+.section-title { font-size:16px; font-weight:700; color:var(--ogk-dark); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.section-title .material-icons-round { color:var(--ogk-cyan); font-size:20px; }
+.section-sub { font-size:12px; color:var(--text-muted); font-weight:400; margin-left:4px; }
+/* Heatmap */
+.heatmap { width:100%; border-collapse:separate; border-spacing:2px; font-size:11px; }
+.heatmap th, .heatmap td { padding:6px 4px; text-align:center; border-radius:4px; }
+.heatmap th { background:var(--ogk-navy); color:white; font-weight:600; font-size:10px; }
+.heatmap th.proc { background:rgba(255,255,255,0.5); color:var(--ogk-dark); text-align:left; padding-left:8px; }
+.heatmap td.proc { background:rgba(255,255,255,0.5); font-weight:600; color:var(--ogk-dark); text-align:left; padding-left:8px; font-size:11px; }
+.heatmap td.cell { font-weight:600; color:white; transition:transform 0.15s; cursor:default; }
+.heatmap td.cell:hover { transform:scale(1.1); z-index:10; position:relative; }
+.heatmap td.avg { background:#1e293b; color:white; font-weight:700; }
+/* SVG charts */
+svg.chart { width:100%; height:240px; }
+.chart-axis { stroke:rgba(100,116,139,0.2); stroke-width:1; }
+.chart-text { font-size:10px; fill:var(--text-muted); }
+.chart-text-bold { font-size:11px; fill:var(--text-main); font-weight:600; }
+.legend { display:flex; gap:12px; flex-wrap:wrap; font-size:11px; margin-top:8px; }
+.legend span { display:flex; align-items:center; gap:4px; }
+.legend i { width:10px; height:10px; border-radius:2px; }
+table.dt { width:100%; border-collapse:collapse; font-size:12px; }
+table.dt th { background:var(--ogk-navy); color:white; padding:8px 10px; text-align:left; font-weight:600; font-size:11px; }
+table.dt td { padding:7px 10px; border-bottom:1px solid rgba(100,116,139,0.15); }
+table.dt tr:last-child td { border-bottom:none; }
+.num { text-align:right; font-variant-numeric:tabular-nums; }
+.num-up { color:var(--ogk-red); font-weight:700; }
+.num-dn { color:#1e6091; font-weight:700; }
+.num-warn { color:var(--ogk-amber); font-weight:700; }
+.tabs { display:flex; gap:4px; background:rgba(255,255,255,0.4); padding:4px; border-radius:12px; width:fit-content; margin-bottom:14px; }
+.tab { padding:8px 16px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-muted); transition:all 0.2s; border:none; background:transparent; }
+.tab.active { background:var(--ogk-navy); color:white; box-shadow:0 2px 6px rgba(0,45,75,0.25); }
+.insight-list { list-style:none; padding:0; }
+.insight-list li { padding:10px 14px; background:rgba(255,255,255,0.4); border-radius:10px; margin-bottom:6px; font-size:13px; line-height:1.5; }
+.insight-list li::before { content:"●"; color:var(--ogk-cyan); margin-right:8px; }
+/* 모달 */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:100; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal-box { background:white; border-radius:20px; padding:32px; max-width:560px; width:90vw; box-shadow:0 24px 60px rgba(0,0,0,0.25); position:relative; }
+.modal-box h3 { font-size:20px; font-weight:800; color:var(--ogk-dark); margin-bottom:8px; }
+.modal-box .step { display:flex; gap:14px; margin:16px 0; align-items:flex-start; }
+.modal-box .step-num { flex-shrink:0; width:28px; height:28px; border-radius:50%; background:var(--ogk-navy); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
+.modal-box .step-text { font-size:14px; line-height:1.6; }
+.modal-box .step-text code { background:#f1f5f9; padding:2px 8px; border-radius:6px; font-family:Consolas,monospace; font-size:12px; color:var(--ogk-navy); }
+.modal-box .close-btn { position:absolute; top:16px; right:16px; background:none; border:none; cursor:pointer; font-size:24px; color:var(--text-muted); }
+.modal-box .note { background:#f1f5f9; border-radius:8px; padding:12px; font-size:12px; color:var(--text-muted); margin-top:16px; line-height:1.5; }
+.footer { margin-top:24px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.6); font-size:11px; color:var(--text-muted); text-align:center; }
+@media (max-width:1100px) { .kpi-grid { grid-template-columns:repeat(2,1fr); } .row-2-1, .row-1-1 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="mesh-background"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div><div class="blob blob-4"></div></div>
+<div class="container">
+  <div class="header">
+    <div class="text-logo">OGK KOREA · SG부문</div>
+    <div class="header-right">
+      <button class="download-btn refresh-btn" onclick="document.getElementById('refresh-modal').style.display='flex'">
+        <span class="material-icons-round">refresh</span>데이터 갱신
+      </button>
+      <a class="download-btn" href="260621_공정가동률_최근12개월_v01.xlsx" download>
+        <span class="material-icons-round">download</span>통합마스터 엑셀
+      </a>
+      <div class="header-meta">2025. 06 ~ 2026. 05 · 12개월</div>
+    </div>
+  </div>
+  <div class="title-section">
+    <div class="main-title">공정 가동률 대시보드</div>
+    <div class="sub-title">Process Capacity Utilization · 6공정 × 15개월 · 노무·설비 가동률 매트릭스</div>
+  </div>
+  <div class="kpi-grid">
+    <div class="inner-card"><div class="card-label"><i class="dot" style="background:var(--ogk-cyan)"></i> 평균 노무 가동률</div>
+      <div class="kpi-value">63.2<span class="unit">%</span></div>
+      <div class="kpi-sub">최다 부담 공정: <b>도장</b> (85%)</div></div>
+    <div class="inner-card"><div class="card-label"><i class="dot" style="background:var(--ogk-amber)"></i> 평균 설비 가동률</div>
+      <div class="kpi-value">54.2<span class="unit">%</span></div>
+      <div class="kpi-sub">최다 부담 공정: <b>사출</b> (106%)</div></div>
+    <div class="inner-card"><div class="card-label"><i class="dot" style="background:var(--ogk-red)"></i> 노무 초과 (>100%)</div>
+      <div class="kpi-value">12<span class="unit">/ 90건</span></div>
+      <div class="kpi-sub">13.3% — 인력 부족 시점</div></div>
+    <div class="inner-card"><div class="card-label"><i class="dot" style="background:var(--ogk-navy)"></i> 설비 초과 (>100%)</div>
+      <div class="kpi-value">13<span class="unit">/ 90건</span></div>
+      <div class="kpi-sub">14.4% — 설비 부족 시점</div></div>
+  </div>
+
+  <div class="inner-card" style="margin-bottom:24px;">
+    <div class="section-title"><span class="material-icons-round">grid_on</span>가동률 히트맵 <span class="section-sub">(공정 × 월)</span></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchHeatmap(event,'lab')">노무 가동률</button>
+      <button class="tab" onclick="switchHeatmap(event,'eq')">설비 가동률</button>
+    </div>
+    <div id="heatmap-wrap"></div>
+    <div class="legend">
+      <span><i style="background:#bfdbfe"></i> 0~50% 유휴</span>
+      <span><i style="background:#67e8f9"></i> 50~80% 안정</span>
+      <span><i style="background:#fbbf24"></i> 80~100% 타이트</span>
+      <span><i style="background:#dc2626"></i> 100%+ 초과</span>
+    </div>
+  </div>
+
+  <div class="row row-2-1">
+    <div class="inner-card">
+      <div class="section-title"><span class="material-icons-round">show_chart</span>공정별 시계열 <span class="section-sub">(노무 vs 설비)</span></div>
+      <div class="tabs" id="proc-tabs">
+        <button class="tab active" onclick="switchProc(event,'사출')">사출</button><button class="tab" onclick="switchProc(event,'도장')">도장</button><button class="tab" onclick="switchProc(event,'렌즈')">렌즈</button><button class="tab" onclick="switchProc(event,'조립')">조립</button><button class="tab" onclick="switchProc(event,'포장')">포장</button><button class="tab" onclick="switchProc(event,'수출포장')">수출포장</button>
+      </div>
+      <div id="proc-chart"></div>
+    </div>
+    <div class="inner-card">
+      <div class="section-title"><span class="material-icons-round">balance</span>공정별 평균</div>
+      <div id="proc-avg-bars"></div>
+    </div>
+  </div>
+
+  <div class="row row-1-1">
+    <div class="inner-card">
+      <div class="section-title"><span class="material-icons-round">person</span>인력 부족 신호 Top 10 <span class="section-sub">(노무 ≫ 설비)</span></div>
+      <table class="dt" id="t-gap-lab"></table>
+    </div>
+    <div class="inner-card">
+      <div class="section-title"><span class="material-icons-round">precision_manufacturing</span>설비 부족 신호 Top 10 <span class="section-sub">(설비 ≫ 노무)</span></div>
+      <table class="dt" id="t-gap-eq"></table>
+    </div>
+  </div>
+
+  <div class="inner-card" style="margin-bottom:24px;">
+    <div class="section-title"><span class="material-icons-round">lightbulb</span>자동 도출 인사이트</div>
+    <ul class="insight-list" id="insight-list"></ul>
+  </div>
+
+  <div class="footer">데이터 출처: 한국오지케이 ERP · 산출일 2026-04-29 · v01
+  <br>ST 매칭률 99.0% · 자체 생산만 (외주 제외) · 가동일 한국 영업일 자동산출</div>
+</div>
+
+<div class="modal-overlay" id="refresh-modal" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box">
+    <button class="close-btn" onclick="document.getElementById('refresh-modal').style.display='none'">×</button>
+    <h3>데이터 갱신 방법</h3>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">새 월 데이터를 추가하려면:</div>
+    <div class="step"><div class="step-num">1</div><div class="step-text">이카운트 ERP에서 신규 월의 <b>생산입고현황</b>, <b>SG공정별 연장특근 시간</b>, <b>ST집계</b> 다운로드</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text"><code>04. ERP</code> 폴더에 그대로 복사 (기존 파일들 옆에)</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text"><code>03_Output</code> 폴더의 <b>공정가동률_갱신.bat</b>을 더블클릭<br>
+    <span style="color:var(--text-muted);font-size:12px;">(또는 <code>python 260429_공정가동률자동갱신_v01.py</code>)</span></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">완료 후 새로 생성된 HTML 파일 열기</div></div>
+    <div class="note">💡 ST집계 파일은 신규 품목이 추가될 때만 갱신하면 됩니다 (전 기간 누적 마스터). 가동일은 한국 공휴일 기준 자동 계산.</div>
+  </div>
+</div>
+
+<script>
+const DATA = {"months": ["2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05"], "procs": ["사출", "도장", "렌즈", "조립", "포장", "수출포장"], "detail": [{"월": "2025-06", "공정": "사출", "생산수량": 132243, "가동일": 19, "ST인원": 4.0, "설비대수": 5, "정규노무": 608.0, "연장특근": 26.4, "가용노무": 634.4, "소요노무": 409.5, "노무율": 0.6455, "가용설비": 760, "소요설비": 801.6, "설비율": 1.0547, "ST매칭건": 356, "ST미매칭건": 2}, {"월": "2025-06", "공정": "도장", "생산수량": 37527, "가동일": 19, "ST인원": 4.0, "설비대수": 3, "정규노무": 608.0, "연장특근": 18.4, "가용노무": 626.4, "소요노무": 377.3, "노무율": 0.6024, "가용설비": 456, "소요설비": 185.3, "설비율": 0.4063, "ST매칭건": 334, "ST미매칭건": 0}, {"월": "2025-06", "공정": "렌즈", "생산수량": 13268, "가동일": 19, "ST인원": 3.0, "설비대수": 3, "정규노무": 456.0, "연장특근": 1.2, "가용노무": 457.2, "소요노무": 135.5, "노무율": 0.2963, "가용설비": 456, "소요설비": 150.6, "설비율": 0.3302, "ST매칭건": 149, "ST미매칭건": 0}, {"월": "2025-06", "공정": "조립", "생산수량": 16338, "가동일": 19, "ST인원": 1.5, "설비대수": 1, "정규노무": 228.0, "연장특근": 19.2, "가용노무": 247.2, "소요노무": 163.9, "노무율": 0.6629, "가용설비": 152, "소요설비": 0.0, "설비율": 0.0, "ST매칭건": 123, "ST미매칭건": 0}, {"월": "2025-06", "공정": "포장", "생산수량": 8380, "가동일": 19, "ST인원": 2.7, "설비대수": 1, "정규노무": 410.4, "연장특근": 12.0, "가용노무": 422.4, "소요노무": 185.9, "노무율": 0.4401, "가용설비": 152, "소요설비": 62.0, "설비율": 0.4079, "ST매칭건": 58, "ST미매칭건": 5}, {"월": "2025-06", "공정": "수출포장", "생산수량": 13166, "가동일": 19, "ST인원": 1.8, "설비대수": 1, "정규노무": 273.6, "연장특근": 34.8, "가용노무": 308.4, "소요노무": 261.5, "노무율": 0.8479, "가용설비": 152, "소요설비": 38.7, "설비율": 0.2546, "ST매칭건": 74, "ST미매칭건": 0}, {"월": "2025-07", "공정": "사출", "생산수량": 92552, "가동일": 23, "ST인원": 4.0, "설비대수": 5, "정규노무": 736.0, "연장특근": 0.0, "가용노무": 736.0, "소요노무": 180.4, "노무율": 0.2451, "가용설비": 920, "소요설비": 570.0, "설비율": 0.6195, "ST매칭건": 266, "ST미매칭건": 0}, {"월": "2025-07", "공정": "도장", "생산수량": 44105, "가동일": 23, "ST인원": 4.0, "설비대수": 3, "정규노무": 736.0, "연장특근": 0.0, "가용노무": 736.0, "소요노무": 461.6, "노무율": 0.6272, "가용설비": 552, "소요설비": 139.2, "설비율": 0.2521, "ST매칭건": 236, "ST미매칭건": 0}, {"월": "2025-07", "공정": "렌즈", "생산수량": 8146, "가동일": 23, "ST인원": 3.0, "설비대수": 3, "정규노무": 552.0, "연장특근": 0.0, "가용노무": 552.0, "소요노무": 126.7, "노무율": 0.2295, "가용설비": 552, "소요설비": 208.8, "설비율": 0.3783, "ST매칭건": 88, "ST미매칭건": 0}, {"월": "2025-07", "공정": "조립", "생산수량": 3724, "가동일": 23, "ST인원": 1.5, "설비대수": 1, "정규노무": 276.0, "연장특근": 0.0, "가용노무": 276.0, "소요노무": 31.5, "노무율": 0.114, "가용설비": 184, "소요설비": 0.3, "설비율": 0.0018, "ST매칭건": 18, "ST미매칭건": 0}, {"월": "2025-07", "공정": "포장", "생산수량": 9789, "가동일": 23, "ST인원": 2.7, "설비대수": 1, "정규노무": 496.8, "연장특근": 0.0, "가용노무": 496.8, "소요노무": 309.3, "노무율": 0.6225, "가용설비": 184, "소요설비": 53.3, "설비율": 0.2894, "ST매칭건": 47, "ST미매칭건": 5}, {"월": "2025-07", "공정": "수출포장", "생산수량": 9661, "가동일": 23, "ST인원": 1.8, "설비대수": 1, "정규노무": 331.2, "연장특근": 0.0, "가용노무": 331.2, "소요노무": 191.1, "노무율": 0.5769, "가용설비": 184, "소요설비": 27.9, "설비율": 0.1516, "ST매칭건": 59, "ST미매칭건": 0}, {"월": "2025-08", "공정": "사출", "생산수량": 92748, "가동일": 20, "ST인원": 4.0, "설비대수": 5, "정규노무": 640.0, "연장특근": 0.0, "가용노무": 640.0, "소요노무": 210.4, "노무율": 0.3287, "가용설비": 800, "소요설비": 566.0, "설비율": 0.7076, "ST매칭건": 313, "ST미매칭건": 10}, {"월": "2025-08", "공정": "도장", "생산수량": 43849, "가동일": 20, "ST인원": 4.0, "설비대수": 3, "정규노무": 640.0, "연장특근": 0.0, "가용노무": 640.0, "소요노무": 502.3, "노무율": 0.7849, "가용설비": 480, "소요설비": 116.7, "설비율": 0.2432, "ST매칭건": 149, "ST미매칭건": 0}, {"월": "2025-08", "공정": "렌즈", "생산수량": 10685, "가동일": 20, "ST인원": 3.0, "설비대수": 3, "정규노무": 480.0, "연장특근": 0.0, "가용노무": 480.0, "소요노무": 166.3, "노무율": 0.3464, "가용설비": 480, "소요설비": 180.8, "설비율": 0.3766, "ST매칭건": 198, "ST미매칭건": 0}, {"월": "2025-08", "공정": "조립", "생산수량": 4220, "가동일": 20, "ST인원": 1.5, "설비대수": 1, "정규노무": 240.0, "연장특근": 0.0, "가용노무": 240.0, "소요노무": 41.1, "노무율": 0.1712, "가용설비": 160, "소요설비": 68.3, "설비율": 0.4266, "ST매칭건": 15, "ST미매칭건": 0}, {"월": "2025-08", "공정": "포장", "생산수량": 3683, "가동일": 20, "ST인원": 2.7, "설비대수": 1, "정규노무": 432.0, "연장특근": 0.0, "가용노무": 432.0, "소요노무": 98.8, "노무율": 0.2288, "가용설비": 160, "소요설비": 14.3, "설비율": 0.0896, "ST매칭건": 18, "ST미매칭건": 0}, {"월": "2025-08", "공정": "수출포장", "생산수량": 4650, "가동일": 20, "ST인원": 1.8, "설비대수": 1, "정규노무": 288.0, "연장특근": 0.0, "가용노무": 288.0, "소요노무": 94.6, "노무율": 0.3283, "가용설비": 160, "소요설비": 14.5, "설비율": 0.0906, "ST매칭건": 13, "ST미매칭건": 0}, {"월": "2025-09", "공정": "사출", "생산수량": 163507, "가동일": 22, "ST인원": 4.0, "설비대수": 5, "정규노무": 704.0, "연장특근": 0.0, "가용노무": 704.0, "소요노무": 354.7, "노무율": 0.5039, "가용설비": 880, "소요설비": 1065.7, "설비율": 1.211, "ST매칭건": 476, "ST미매칭건": 17}, {"월": "2025-09", "공정": "도장", "생산수량": 70234, "가동일": 22, "ST인원": 4.0, "설비대수": 3, "정규노무": 704.0, "연장특근": 0.0, "가용노무": 704.0, "소요노무": 826.3, "노무율": 1.1737, "가용설비": 528, "소요설비": 207.7, "설비율": 0.3934, "ST매칭건": 299, "ST미매칭건": 0}, {"월": "2025-09", "공정": "렌즈", "생산수량": 13784, "가동일": 22, "ST인원": 3.0, "설비대수": 3, "정규노무": 528.0, "연장특근": 0.0, "가용노무": 528.0, "소요노무": 203.7, "노무율": 0.3859, "가용설비": 528, "소요설비": 226.2, "설비율": 0.4283, "ST매칭건": 209, "ST미매칭건": 0}, {"월": "2025-09", "공정": "조립", "생산수량": 15448, "가동일": 22, "ST인원": 1.5, "설비대수": 1, "정규노무": 264.0, "연장특근": 0.0, "가용노무": 264.0, "소요노무": 148.7, "노무율": 0.5631, "가용설비": 176, "소요설비": 164.2, "설비율": 0.9329, "ST매칭건": 55, "ST미매칭건": 0}, {"월": "2025-09", "공정": "포장", "생산수량": 8562, "가동일": 22, "ST인원": 2.7, "설비대수": 1, "정규노무": 475.2, "연장특근": 0.0, "가용노무": 475.2, "소요노무": 282.9, "노무율": 0.5953, "가용설비": 176, "소요설비": 50.0, "설비율": 0.284, "ST매칭건": 50, "ST미매칭건": 3}, {"월": "2025-09", "공정": "수출포장", "생산수량": 7735, "가동일": 22, "ST인원": 1.8, "설비대수": 1, "정규노무": 316.8, "연장특근": 0.0, "가용노무": 316.8, "소요노무": 112.4, "노무율": 0.3549, "가용설비": 176, "소요설비": 13.1, "설비율": 0.0744, "ST매칭건": 81, "ST미매칭건": 0}, {"월": "2025-10", "공정": "사출", "생산수량": 75182, "가동일": 18, "ST인원": 4.0, "설비대수": 5, "정규노무": 576.0, "연장특근": 129.0, "가용노무": 705.0, "소요노무": 241.2, "노무율": 0.3422, "가용설비": 720, "소요설비": 526.2, "설비율": 0.7309, "ST매칭건": 330, "ST미매칭건": 0}, {"월": "2025-10", "공정": "도장", "생산수량": 42242, "가동일": 18, "ST인원": 4.0, "설비대수": 3, "정규노무": 576.0, "연장특근": 44.5, "가용노무": 620.5, "소요노무": 416.6, "노무율": 0.6713, "가용설비": 432, "소요설비": 178.2, "설비율": 0.4124, "ST매칭건": 277, "ST미매칭건": 0}, {"월": "2025-10", "공정": "렌즈", "생산수량": 8971, "가동일": 18, "ST인원": 3.0, "설비대수": 3, "정규노무": 432.0, "연장특근": 27.0, "가용노무": 459.0, "소요노무": 142.1, "노무율": 0.3096, "가용설비": 432, "소요설비": 150.3, "설비율": 0.348, "ST매칭건": 166, "ST미매칭건": 0}, {"월": "2025-10", "공정": "조립", "생산수량": 14895, "가동일": 18, "ST인원": 1.5, "설비대수": 1, "정규노무": 216.0, "연장특근": 14.3, "가용노무": 230.3, "소요노무": 141.8, "노무율": 0.6158, "가용설비": 144, "소요설비": 109.1, "설비율": 0.758, "ST매칭건": 40, "ST미매칭건": 0}, {"월": "2025-10", "공정": "포장", "생산수량": 6177, "가동일": 18, "ST인원": 2.7, "설비대수": 1, "정규노무": 388.8, "연장특근": 7.7, "가용노무": 396.5, "소요노무": 117.6, "노무율": 0.2965, "가용설비": 144, "소요설비": 36.1, "설비율": 0.251, "ST매칭건": 35, "ST미매칭건": 1}, {"월": "2025-10", "공정": "수출포장", "생산수량": 3958, "가동일": 18, "ST인원": 1.8, "설비대수": 1, "정규노무": 259.2, "연장특근": 7.5, "가용노무": 266.7, "소요노무": 46.7, "노무율": 0.175, "가용설비": 144, "소요설비": 4.5, "설비율": 0.0313, "ST매칭건": 42, "ST미매칭건": 6}, {"월": "2025-11", "공정": "사출", "생산수량": 73834, "가동일": 20, "ST인원": 4.0, "설비대수": 5, "정규노무": 640.0, "연장특근": 219.0, "가용노무": 859.0, "소요노무": 306.6, "노무율": 0.3569, "가용설비": 800, "소요설비": 779.0, "설비율": 0.9737, "ST매칭건": 551, "ST미매칭건": 3}, {"월": "2025-11", "공정": "도장", "생산수량": 33856, "가동일": 20, "ST인원": 4.0, "설비대수": 3, "정규노무": 640.0, "연장특근": 179.2, "가용노무": 819.2, "소요노무": 339.4, "노무율": 0.4143, "가용설비": 480, "소요설비": 153.9, "설비율": 0.3207, "ST매칭건": 408, "ST미매칭건": 3}, {"월": "2025-11", "공정": "렌즈", "생산수량": 19487, "가동일": 20, "ST인원": 3.0, "설비대수": 3, "정규노무": 480.0, "연장특근": 154.0, "가용노무": 634.0, "소요노무": 292.7, "노무율": 0.4617, "가용설비": 480, "소요설비": 328.2, "설비율": 0.6838, "ST매칭건": 347, "ST미매칭건": 0}, {"월": "2025-11", "공정": "조립", "생산수량": 27067, "가동일": 20, "ST인원": 1.5, "설비대수": 1, "정규노무": 240.0, "연장특근": 80.5, "가용노무": 320.4, "소요노무": 294.2, "노무율": 0.9181, "가용설비": 160, "소요설비": 147.3, "설비율": 0.9209, "ST매칭건": 135, "ST미매칭건": 0}, {"월": "2025-11", "공정": "포장", "생산수량": 16348, "가동일": 20, "ST인원": 2.7, "설비대수": 1, "정규노무": 432.0, "연장특근": 57.3, "가용노무": 489.2, "소요노무": 223.5, "노무율": 0.4567, "가용설비": 160, "소요설비": 86.1, "설비율": 0.5384, "ST매칭건": 67, "ST미매칭건": 3}, {"월": "2025-11", "공정": "수출포장", "생산수량": 18617, "가동일": 20, "ST인원": 1.8, "설비대수": 1, "정규노무": 288.0, "연장특근": 105.0, "가용노무": 393.1, "소요노무": 281.3, "노무율": 0.7158, "가용설비": 160, "소요설비": 32.3, "설비율": 0.2019, "ST매칭건": 95, "ST미매칭건": 18}, {"월": "2025-12", "공정": "사출", "생산수량": 103118, "가동일": 22, "ST인원": 4.0, "설비대수": 5, "정규노무": 704.0, "연장특근": 214.4, "가용노무": 918.4, "소요노무": 452.2, "노무율": 0.4924, "가용설비": 880, "소요설비": 1245.7, "설비율": 1.4156, "ST매칭건": 701, "ST미매칭건": 0}, {"월": "2025-12", "공정": "도장", "생산수량": 42769, "가동일": 22, "ST인원": 4.0, "설비대수": 3, "정규노무": 704.0, "연장특근": 214.2, "가용노무": 918.2, "소요노무": 481.9, "노무율": 0.5249, "가용설비": 528, "소요설비": 100.7, "설비율": 0.1907, "ST매칭건": 243, "ST미매칭건": 0}, {"월": "2025-12", "공정": "렌즈", "생산수량": 15482, "가동일": 22, "ST인원": 3.0, "설비대수": 3, "정규노무": 528.0, "연장특근": 167.1, "가용노무": 695.1, "소요노무": 248.0, "노무율": 0.3568, "가용설비": 528, "소요설비": 283.3, "설비율": 0.5366, "ST매칭건": 365, "ST미매칭건": 0}, {"월": "2025-12", "공정": "조립", "생산수량": 18904, "가동일": 22, "ST인원": 1.5, "설비대수": 1, "정규노무": 264.0, "연장특근": 72.0, "가용노무": 336.1, "소요노무": 128.1, "노무율": 0.3812, "가용설비": 176, "소요설비": 75.1, "설비율": 0.4269, "ST매칭건": 94, "ST미매칭건": 0}, {"월": "2025-12", "공정": "포장", "생산수량": 28032, "가동일": 22, "ST인원": 2.7, "설비대수": 1, "정규노무": 475.2, "연장특근": 83.8, "가용노무": 559.0, "소요노무": 448.4, "노무율": 0.8021, "가용설비": 176, "소요설비": 110.2, "설비율": 0.6262, "ST매칭건": 156, "ST미매칭건": 4}, {"월": "2025-12", "공정": "수출포장", "생산수량": 31605, "가동일": 22, "ST인원": 1.8, "설비대수": 1, "정규노무": 316.8, "연장특근": 161.9, "가용노무": 478.8, "소요노무": 614.0, "노무율": 1.2825, "가용설비": 176, "소요설비": 75.1, "설비율": 0.4269, "ST매칭건": 275, "ST미매칭건": 2}, {"월": "2026-01", "공정": "사출", "생산수량": 129760, "가동일": 21, "ST인원": 4.0, "설비대수": 5, "정규노무": 672.0, "연장특근": 173.4, "가용노무": 845.5, "소요노무": 362.0, "노무율": 0.4282, "가용설비": 840, "소요설비": 894.4, "설비율": 1.0647, "ST매칭건": 708, "ST미매칭건": 12}, {"월": "2026-01", "공정": "도장", "생산수량": 60382, "가동일": 21, "ST인원": 4.0, "설비대수": 3, "정규노무": 672.0, "연장특근": 185.2, "가용노무": 857.1, "소요노무": 658.9, "노무율": 0.7688, "가용설비": 504, "소요설비": 233.0, "설비율": 0.4623, "ST매칭건": 404, "ST미매칭건": 0}, {"월": "2026-01", "공정": "렌즈", "생산수량": 14669, "가동일": 21, "ST인원": 3.0, "설비대수": 3, "정규노무": 504.0, "연장특근": 81.9, "가용노무": 585.9, "소요노무": 228.4, "노무율": 0.3899, "가용설비": 504, "소요설비": 258.8, "설비율": 0.5135, "ST매칭건": 307, "ST미매칭건": 0}, {"월": "2026-01", "공정": "조립", "생산수량": 12478, "가동일": 21, "ST인원": 1.5, "설비대수": 1, "정규노무": 252.0, "연장특근": 45.2, "가용노무": 297.2, "소요노무": 86.5, "노무율": 0.291, "가용설비": 168, "소요설비": 52.8, "설비율": 0.3143, "ST매칭건": 92, "ST미매칭건": 0}, {"월": "2026-01", "공정": "포장", "생산수량": 6661, "가동일": 21, "ST인원": 2.7, "설비대수": 1, "정규노무": 453.6, "연장특근": 56.0, "가용노무": 509.7, "소요노무": 246.9, "노무율": 0.4845, "가용설비": 168, "소요설비": 50.1, "설비율": 0.2981, "ST매칭건": 58, "ST미매칭건": 0}, {"월": "2026-01", "공정": "수출포장", "생산수량": 9018, "가동일": 21, "ST인원": 1.8, "설비대수": 1, "정규노무": 302.4, "연장특근": 60.8, "가용노무": 363.2, "소요노무": 183.6, "노무율": 0.5056, "가용설비": 168, "소요설비": 24.2, "설비율": 0.1439, "ST매칭건": 80, "ST미매칭건": 6}, {"월": "2026-02", "공정": "사출", "생산수량": 117318, "가동일": 17, "ST인원": 4.0, "설비대수": 5, "정규노무": 544.0, "연장특근": 188.8, "가용노무": 732.8, "소요노무": 405.1, "노무율": 0.5528, "가용설비": 680, "소요설비": 856.3, "설비율": 1.2593, "ST매칭건": 492, "ST미매칭건": 12}, {"월": "2026-02", "공정": "도장", "생산수량": 47017, "가동일": 17, "ST인원": 4.0, "설비대수": 3, "정규노무": 544.0, "연장특근": 182.9, "가용노무": 726.9, "소요노무": 477.3, "노무율": 0.6566, "가용설비": 408, "소요설비": 205.8, "설비율": 0.5045, "ST매칭건": 305, "ST미매칭건": 0}, {"월": "2026-02", "공정": "렌즈", "생산수량": 14739, "가동일": 17, "ST인원": 3.0, "설비대수": 3, "정규노무": 408.0, "연장특근": 138.2, "가용노무": 546.2, "소요노무": 231.2, "노무율": 0.4233, "가용설비": 408, "소요설비": 257.1, "설비율": 0.6302, "ST매칭건": 411, "ST미매칭건": 0}, {"월": "2026-02", "공정": "조립", "생산수량": 28027, "가동일": 17, "ST인원": 1.5, "설비대수": 1, "정규노무": 204.0, "연장특근": 57.8, "가용노무": 261.8, "소요노무": 273.2, "노무율": 1.0437, "가용설비": 136, "소요설비": 220.6, "설비율": 1.6219, "ST매칭건": 116, "ST미매칭건": 0}, {"월": "2026-02", "공정": "포장", "생산수량": 21166, "가동일": 17, "ST인원": 2.7, "설비대수": 1, "정규노무": 367.2, "연장특근": 70.1, "가용노무": 437.3, "소요노무": 528.3, "노무율": 1.2082, "가용설비": 136, "소요설비": 101.2, "설비율": 0.7439, "ST매칭건": 68, "ST미매칭건": 0}, {"월": "2026-02", "공정": "수출포장", "생산수량": 22691, "가동일": 17, "ST인원": 1.8, "설비대수": 1, "정규노무": 244.8, "연장특근": 85.7, "가용노무": 330.5, "소요노무": 530.8, "노무율": 1.6058, "가용설비": 136, "소요설비": 62.7, "설비율": 0.4608, "ST매칭건": 132, "ST미매칭건": 1}, {"월": "2026-03", "공정": "사출", "생산수량": 147426, "가동일": 21, "ST인원": 4.0, "설비대수": 5, "정규노무": 672.0, "연장특근": 245.8, "가용노무": 917.8, "소요노무": 443.2, "노무율": 0.4829, "가용설비": 840, "소요설비": 1130.3, "설비율": 1.3455, "ST매칭건": 849, "ST미매칭건": 0}, {"월": "2026-03", "공정": "도장", "생산수량": 81170, "가동일": 21, "ST인원": 4.0, "설비대수": 3, "정규노무": 672.0, "연장특근": 310.7, "가용노무": 982.7, "소요노무": 980.3, "노무율": 0.9975, "가용설비": 504, "소요설비": 276.9, "설비율": 0.5495, "ST매칭건": 349, "ST미매칭건": 0}, {"월": "2026-03", "공정": "렌즈", "생산수량": 21510, "가동일": 21, "ST인원": 3.0, "설비대수": 3, "정규노무": 504.0, "연장특근": 86.2, "가용노무": 590.2, "소요노무": 264.6, "노무율": 0.4483, "가용설비": 504, "소요설비": 260.4, "설비율": 0.5168, "ST매칭건": 395, "ST미매칭건": 0}, {"월": "2026-03", "공정": "조립", "생산수량": 33778, "가동일": 21, "ST인원": 1.5, "설비대수": 1, "정규노무": 252.0, "연장특근": 45.0, "가용노무": 297.0, "소요노무": 277.4, "노무율": 0.9341, "가용설비": 168, "소요설비": 147.6, "설비율": 0.8785, "ST매칭건": 127, "ST미매칭건": 0}, {"월": "2026-03", "공정": "포장", "생산수량": 24629, "가동일": 21, "ST인원": 2.7, "설비대수": 1, "정규노무": 453.6, "연장특근": 54.9, "가용노무": 508.5, "소요노무": 405.9, "노무율": 0.7983, "가용설비": 168, "소요설비": 175.2, "설비율": 1.0429, "ST매칭건": 144, "ST미매칭건": 4}, {"월": "2026-03", "공정": "수출포장", "생산수량": 24789, "가동일": 21, "ST인원": 1.8, "설비대수": 1, "정규노무": 302.4, "연장특근": 86.0, "가용노무": 388.4, "소요노무": 430.2, "노무율": 1.1078, "가용설비": 168, "소요설비": 53.3, "설비율": 0.3173, "ST매칭건": 237, "ST미매칭건": 46}, {"월": "2026-04", "공정": "사출", "생산수량": 80880, "가동일": 22, "ST인원": 4.0, "설비대수": 5, "정규노무": 704.0, "연장특근": 147.3, "가용노무": 851.3, "소요노무": 273.1, "노무율": 0.3208, "가용설비": 880, "소요설비": 543.2, "설비율": 0.6173, "ST매칭건": 520, "ST미매칭건": 0}, {"월": "2026-04", "공정": "도장", "생산수량": 44759, "가동일": 22, "ST인원": 4.0, "설비대수": 3, "정규노무": 704.0, "연장특근": 177.9, "가용노무": 881.9, "소요노무": 446.8, "노무율": 0.5066, "가용설비": 528, "소요설비": 181.7, "설비율": 0.3442, "ST매칭건": 309, "ST미매칭건": 0}, {"월": "2026-04", "공정": "렌즈", "생산수량": 14125, "가동일": 22, "ST인원": 3.0, "설비대수": 3, "정규노무": 528.0, "연장특근": 30.9, "가용노무": 558.9, "소요노무": 233.3, "노무율": 0.4174, "가용설비": 528, "소요설비": 250.2, "설비율": 0.4739, "ST매칭건": 399, "ST미매칭건": 0}, {"월": "2026-04", "공정": "조립", "생산수량": 21238, "가동일": 22, "ST인원": 1.5, "설비대수": 1, "정규노무": 264.0, "연장특근": 22.4, "가용노무": 286.4, "소요노무": 159.7, "노무율": 0.5576, "가용설비": 176, "소요설비": 22.9, "설비율": 0.1301, "ST매칭건": 131, "ST미매칭건": 0}, {"월": "2026-04", "공정": "포장", "생산수량": 12455, "가동일": 22, "ST인원": 2.7, "설비대수": 1, "정규노무": 475.2, "연장특근": 21.1, "가용노무": 496.3, "소요노무": 249.9, "노무율": 0.5036, "가용설비": 176, "소요설비": 92.8, "설비율": 0.5272, "ST매칭건": 80, "ST미매칭건": 0}, {"월": "2026-04", "공정": "수출포장", "생산수량": 16456, "가동일": 22, "ST인원": 1.8, "설비대수": 1, "정규노무": 316.8, "연장특근": 19.9, "가용노무": 336.7, "소요노무": 266.9, "노무율": 0.7928, "가용설비": 176, "소요설비": 32.3, "설비율": 0.1836, "ST매칭건": 184, "ST미매칭건": 28}, {"월": "2026-05", "공정": "사출", "생산수량": 160870, "가동일": 19, "ST인원": 4.0, "설비대수": 5, "정규노무": 608.0, "연장특근": 0.0, "가용노무": 608.0, "소요노무": 419.2, "노무율": 0.6894, "가용설비": 760, "소요설비": 1304.0, "설비율": 1.7158, "ST매칭건": 636, "ST미매칭건": 0}, {"월": "2026-05", "공정": "도장", "생산수량": 80298, "가동일": 19, "ST인원": 4.0, "설비대수": 3, "정규노무": 608.0, "연장특근": 0.0, "가용노무": 608.0, "소요노무": 786.8, "노무율": 1.2941, "가용설비": 456, "소요설비": 280.0, "설비율": 0.614, "ST매칭건": 462, "ST미매칭건": 0}, {"월": "2026-05", "공정": "렌즈", "생산수량": 9946, "가동일": 19, "ST인원": 3.0, "설비대수": 3, "정규노무": 456.0, "연장특근": 0.0, "가용노무": 456.0, "소요노무": 149.6, "노무율": 0.3281, "가용설비": 456, "소요설비": 161.9, "설비율": 0.3551, "ST매칭건": 248, "ST미매칭건": 0}, {"월": "2026-05", "공정": "조립", "생산수량": 21414, "가동일": 19, "ST인원": 1.5, "설비대수": 1, "정규노무": 228.0, "연장특근": 0.0, "가용노무": 228.0, "소요노무": 173.0, "노무율": 0.7587, "가용설비": 152, "소요설비": 60.5, "설비율": 0.3978, "ST매칭건": 158, "ST미매칭건": 0}, {"월": "2026-05", "공정": "포장", "생산수량": 9772, "가동일": 19, "ST인원": 2.7, "설비대수": 1, "정규노무": 410.4, "연장특근": 0.0, "가용노무": 410.4, "소요노무": 179.0, "노무율": 0.4361, "가용설비": 152, "소요설비": 87.4, "설비율": 0.5753, "ST매칭건": 70, "ST미매칭건": 4}, {"월": "2026-05", "공정": "수출포장", "생산수량": 16848, "가동일": 19, "ST인원": 1.8, "설비대수": 1, "정규노무": 273.6, "연장특근": 0.0, "가용노무": 273.6, "소요노무": 195.9, "노무율": 0.7159, "가용설비": 152, "소요설비": 24.8, "설비율": 0.1629, "ST매칭건": 134, "ST미매칭건": 54}], "matrix_lab": [{"공정": "사출", "2025-06": 0.6455, "2025-07": 0.2451, "2025-08": 0.3287, "2025-09": 0.5039, "2025-10": 0.3422, "2025-11": 0.3569, "2025-12": 0.4924, "2026-01": 0.4282, "2026-02": 0.5528, "2026-03": 0.4829, "2026-04": 0.3208, "2026-05": 0.6894, "15M평균": 0.4490666666666667}, {"공정": "도장", "2025-06": 0.6024, "2025-07": 0.6272, "2025-08": 0.7849, "2025-09": 1.1737, "2025-10": 0.6713, "2025-11": 0.4143, "2025-12": 0.5249, "2026-01": 0.7688, "2026-02": 0.6566, "2026-03": 0.9975, "2026-04": 0.5066, "2026-05": 1.2941, "15M평균": 0.7518583333333333}, {"공정": "렌즈", "2025-06": 0.2963, "2025-07": 0.2295, "2025-08": 0.3464, "2025-09": 0.3859, "2025-10": 0.3096, "2025-11": 0.4617, "2025-12": 0.3568, "2026-01": 0.3899, "2026-02": 0.4233, "2026-03": 0.4483, "2026-04": 0.4174, "2026-05": 0.3281, "15M평균": 0.36610000000000004}, {"공정": "조립", "2025-06": 0.6629, "2025-07": 0.114, "2025-08": 0.1712, "2025-09": 0.5631, "2025-10": 0.6158, "2025-11": 0.9181, "2025-12": 0.3812, "2026-01": 0.291, "2026-02": 1.0437, "2026-03": 0.9341, "2026-04": 0.5576, "2026-05": 0.7587, "15M평균": 0.5842833333333334}, {"공정": "포장", "2025-06": 0.4401, "2025-07": 0.6225, "2025-08": 0.2288, "2025-09": 0.5953, "2025-10": 0.2965, "2025-11": 0.4567, "2025-12": 0.8021, "2026-01": 0.4845, "2026-02": 1.2082, "2026-03": 0.7983, "2026-04": 0.5036, "2026-05": 0.4361, "15M평균": 0.572725}, {"공정": "수출포장", "2025-06": 0.8479, "2025-07": 0.5769, "2025-08": 0.3283, "2025-09": 0.3549, "2025-10": 0.175, "2025-11": 0.7158, "2025-12": 1.2825, "2026-01": 0.5056, "2026-02": 1.6058, "2026-03": 1.1078, "2026-04": 0.7928, "2026-05": 0.7159, "15M평균": 0.7507666666666667}], "matrix_eq": [{"공정": "사출", "2025-06": 1.0547, "2025-07": 0.6195, "2025-08": 0.7076, "2025-09": 1.211, "2025-10": 0.7309, "2025-11": 0.9737, "2025-12": 1.4156, "2026-01": 1.0647, "2026-02": 1.2593, "2026-03": 1.3455, "2026-04": 0.6173, "2026-05": 1.7158, "15M평균": 1.0596333333333332}, {"공정": "도장", "2025-06": 0.4063, "2025-07": 0.2521, "2025-08": 0.2432, "2025-09": 0.3934, "2025-10": 0.4124, "2025-11": 0.3207, "2025-12": 0.1907, "2026-01": 0.4623, "2026-02": 0.5045, "2026-03": 0.5495, "2026-04": 0.3442, "2026-05": 0.614, "15M평균": 0.39110833333333334}, {"공정": "렌즈", "2025-06": 0.3302, "2025-07": 0.3783, "2025-08": 0.3766, "2025-09": 0.4283, "2025-10": 0.348, "2025-11": 0.6838, "2025-12": 0.5366, "2026-01": 0.5135, "2026-02": 0.6302, "2026-03": 0.5168, "2026-04": 0.4739, "2026-05": 0.3551, "15M평균": 0.46427500000000005}, {"공정": "조립", "2025-06": 0.0, "2025-07": 0.0018, "2025-08": 0.4266, "2025-09": 0.9329, "2025-10": 0.758, "2025-11": 0.9209, "2025-12": 0.4269, "2026-01": 0.3143, "2026-02": 1.6219, "2026-03": 0.8785, "2026-04": 0.1301, "2026-05": 0.3978, "15M평균": 0.567475}, {"공정": "포장", "2025-06": 0.4079, "2025-07": 0.2894, "2025-08": 0.0896, "2025-09": 0.284, "2025-10": 0.251, "2025-11": 0.5384, "2025-12": 0.6262, "2026-01": 0.2981, "2026-02": 0.7439, "2026-03": 1.0429, "2026-04": 0.5272, "2026-05": 0.5753, "15M평균": 0.472825}, {"공정": "수출포장", "2025-06": 0.2546, "2025-07": 0.1516, "2025-08": 0.0906, "2025-09": 0.0744, "2025-10": 0.0313, "2025-11": 0.2019, "2025-12": 0.4269, "2026-01": 0.1439, "2026-02": 0.4608, "2026-03": 0.3173, "2026-04": 0.1836, "2026-05": 0.1629, "15M평균": 0.20831666666666668}], "p_stat": [{"공정": "사출", "노무율평균": 0.4491, "노무율최대": 0.6894, "설비율평균": 1.0596, "설비율최대": 1.7158}, {"공정": "도장", "노무율평균": 0.7519, "노무율최대": 1.2941, "설비율평균": 0.3911, "설비율최대": 0.614}, {"공정": "렌즈", "노무율평균": 0.3661, "노무율최대": 0.4617, "설비율평균": 0.4643, "설비율최대": 0.6838}, {"공정": "조립", "노무율평균": 0.5843, "노무율최대": 1.0437, "설비율평균": 0.5675, "설비율최대": 1.6219}, {"공정": "포장", "노무율평균": 0.5727, "노무율최대": 1.2082, "설비율평균": 0.4728, "설비율최대": 1.0429}, {"공정": "수출포장", "노무율평균": 0.7508, "노무율최대": 1.6058, "설비율평균": 0.2083, "설비율최대": 0.4608}], "m_avg": [{"월": "2025-06", "노무율평균": 0.5825, "설비율평균": 0.409}, {"월": "2025-07", "노무율평균": 0.4025, "설비율평균": 0.2821}, {"월": "2025-08", "노무율평균": 0.3647, "설비율평균": 0.3224}, {"월": "2025-09", "노무율평균": 0.5961, "설비율평균": 0.554}, {"월": "2025-10", "노무율평균": 0.4017, "설비율평균": 0.4219}, {"월": "2025-11", "노무율평균": 0.5539, "설비율평균": 0.6066}, {"월": "2025-12", "노무율평균": 0.64, "설비율평균": 0.6038}, {"월": "2026-01", "노무율평균": 0.478, "설비율평균": 0.4661}, {"월": "2026-02", "노무율평균": 0.9151, "설비율평균": 0.8701}, {"월": "2026-03", "노무율평균": 0.7948, "설비율평균": 0.7751}, {"월": "2026-04", "노무율평균": 0.5165, "설비율평균": 0.3794}, {"월": "2026-05", "노무율평균": 0.7037, "설비율평균": 0.6368}], "gap_top_lab": [{"월": "2026-02", "공정": "수출포장", "노무율": 1.6058, "설비율": 0.4608, "갭": 1.145}, {"월": "2025-12", "공정": "수출포장", "노무율": 1.2825, "설비율": 0.4269, "갭": 0.8556}, {"월": "2026-03", "공정": "수출포장", "노무율": 1.1078, "설비율": 0.3173, "갭": 0.7905}, {"월": "2025-09", "공정": "도장", "노무율": 1.1737, "설비율": 0.3934, "갭": 0.7803}, {"월": "2026-05", "공정": "도장", "노무율": 1.2941, "설비율": 0.614, "갭": 0.6801}, {"월": "2025-06", "공정": "조립", "노무율": 0.6629, "설비율": 0.0, "갭": 0.6629}, {"월": "2026-04", "공정": "수출포장", "노무율": 0.7928, "설비율": 0.1836, "갭": 0.6092}, {"월": "2025-06", "공정": "수출포장", "노무율": 0.8479, "설비율": 0.2546, "갭": 0.5933}, {"월": "2026-05", "공정": "수출포장", "노무율": 0.7159, "설비율": 0.1629, "갭": 0.553}, {"월": "2025-08", "공정": "도장", "노무율": 0.7849, "설비율": 0.2432, "갭": 0.5417}], "gap_top_eq": [{"월": "2026-05", "공정": "사출", "노무율": 0.6894, "설비율": 1.7158, "갭": -1.0264}, {"월": "2025-12", "공정": "사출", "노무율": 0.4924, "설비율": 1.4156, "갭": -0.9232}, {"월": "2026-03", "공정": "사출", "노무율": 0.4829, "설비율": 1.3455, "갭": -0.8626}, {"월": "2025-09", "공정": "사출", "노무율": 0.5039, "설비율": 1.211, "갭": -0.7071}, {"월": "2026-02", "공정": "사출", "노무율": 0.5528, "설비율": 1.2593, "갭": -0.7065}, {"월": "2026-01", "공정": "사출", "노무율": 0.4282, "설비율": 1.0647, "갭": -0.6365}, {"월": "2025-11", "공정": "사출", "노무율": 0.3569, "설비율": 0.9737, "갭": -0.6168}, {"월": "2026-02", "공정": "조립", "노무율": 1.0437, "설비율": 1.6219, "갭": -0.5782}, {"월": "2025-06", "공정": "사출", "노무율": 0.6455, "설비율": 1.0547, "갭": -0.4092}, {"월": "2025-10", "공정": "사출", "노무율": 0.3422, "설비율": 0.7309, "갭": -0.3887}], "insights": ["사출 설비 만성 병목 — 평균 106%, 정규 시간으로 수요 못 감당", "렌즈 유휴 여력 — 평균 노무 37% / 설비 46%, 다른 공정 부담 흡수 가능", "노무 피크: 2026-02 수출포장 161%", "설비 피크: 2026-05 사출 172%"], "totals": {"total_qty": 2714837, "match_pct": 98.5, "n_procs": 6, "n_months": 12, "lab_over_count": 7, "eq_over_count": 9}};
+const MONTHS = DATA.months;
+const PROCS = DATA.procs;
+let curHeatmap = 'lab'; // lab | eq
+let curProc = PROCS[0];
+
+function fmt(n,d=0){ if(n===null||n===undefined||isNaN(n))return'-'; return Number(n).toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function pct(n){ if(n===null||isNaN(n))return'-'; return (n*100).toFixed(1)+'%'; }
+function trim(s,n){ if(!s)return''; return s.length>n?s.slice(0,n)+'…':s; }
+
+// 색상 스케일 (0~150%)
+function heatColor(v){
+  if(v===null||isNaN(v))return'#e2e8f0';
+  if(v<0.5) return `rgba(96,165,250,${0.3+v})`; // 유휴 — 파랑 옅음
+  if(v<0.8) return `rgba(34,211,238,${0.7+(v-0.5)*0.3})`; // 안정 — cyan
+  if(v<1.0) return `rgba(251,191,36,${0.8+(v-0.8)})`; // 타이트 — amber
+  return `rgba(220,38,38,${Math.min(1,0.7+(v-1)*0.5)})`; // 초과 — red
+}
+
+function drawHeatmap(){
+  const data = curHeatmap==='lab' ? DATA.matrix_lab : DATA.matrix_eq;
+  let html = '<table class="heatmap"><thead><tr><th class="proc">공정</th>';
+  MONTHS.forEach(m => html += `<th>${m.slice(2)}</th>`);
+  html += '<th>15M평균</th></tr></thead><tbody>';
+  PROCS.forEach(p => {
+    const row = data.find(r => r['공정']===p);
+    if(!row) return;
+    html += `<tr><td class="proc">${p}</td>`;
+    MONTHS.forEach(m => {
+      const v = row[m];
+      const txt = v===null||v===undefined ? '-' : (v*100).toFixed(0);
+      const color = heatColor(v);
+      html += `<td class="cell" style="background:${color}" title="${p} ${m}: ${(v*100).toFixed(1)}%">${txt}</td>`;
+    });
+    const avg = row['15M평균'];
+    html += `<td class="avg">${(avg*100).toFixed(0)}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('heatmap-wrap').innerHTML = html;
+}
+function switchHeatmap(e, key){
+  document.querySelectorAll('#heatmap-wrap').forEach(_=>{});
+  e.target.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+  curHeatmap = key;
+  drawHeatmap();
+}
+
+function drawProcChart(){
+  const w=720, h=240, pad={l:40,r:30,t:30,b:30};
+  const data = DATA.detail.filter(d => d['공정']===curProc).sort((a,b)=>a['월'].localeCompare(b['월']));
+  if(!data.length){ document.getElementById('proc-chart').innerHTML='데이터 없음'; return; }
+  const labVals = data.map(d=>d['노무율']);
+  const eqVals = data.map(d=>d['설비율']);
+  const allVals = [...labVals, ...eqVals];
+  const maxV = Math.max(1.5, ...allVals)*1.05;
+  const xStep = (w-pad.l-pad.r)/(MONTHS.length-1);
+  const yScale = (h-pad.t-pad.b)/maxV;
+  
+  let svg = `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">`;
+  // grid + 100% 라인
+  for(let i=0; i<=4; i++){
+    const y = pad.t + (h-pad.t-pad.b)*i/4;
+    svg += `<line class="chart-axis" x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}"/>`;
+    svg += `<text class="chart-text" x="${pad.l-6}" y="${y+3}" text-anchor="end">${((maxV*(1-i/4))*100).toFixed(0)}%</text>`;
+  }
+  // 100% 기준선
+  const y100 = h-pad.b - 1.0*yScale;
+  svg += `<line x1="${pad.l}" y1="${y100}" x2="${w-pad.r}" y2="${y100}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"/>`;
+  svg += `<text class="chart-text" x="${w-pad.r+2}" y="${y100+3}" fill="#dc2626">100%</text>`;
+  
+  // 라인 그리기
+  function drawLine(values, color, label){
+    const pts = MONTHS.map((m,i) => {
+      const di = data.findIndex(d=>d['월']===m);
+      const v = di>=0 ? values[di] : null;
+      return {x: pad.l+i*xStep, y: v!==null ? h-pad.b-v*yScale : null, v: v};
+    });
+    const validPts = pts.filter(p=>p.y!==null);
+    const path = validPts.map((p,i)=>(i===0?'M':'L')+p.x+','+p.y).join(' ');
+    svg += `<path d="${path}" stroke="${color}" stroke-width="2.5" fill="none"/>`;
+    pts.forEach((p,i)=>{
+      if(p.y===null) return;
+      svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${color}" stroke="white" stroke-width="2"/>`;
+      svg += `<text class="chart-text-bold" x="${p.x}" y="${p.y-10}" text-anchor="middle" fill="${color}">${(p.v*100).toFixed(0)}</text>`;
+    });
+  }
+  drawLine(labVals, '#009AB8', '노무');
+  drawLine(eqVals, '#d97706', '설비');
+  
+  // x축 라벨
+  MONTHS.forEach((m,i) => {
+    const x = pad.l+i*xStep;
+    svg += `<text class="chart-text" x="${x}" y="${h-pad.b+15}" text-anchor="middle">${m.slice(2)}</text>`;
+  });
+  svg += '</svg>';
+  document.getElementById('proc-chart').innerHTML = svg + 
+    `<div class="legend"><span><i style="background:#009AB8"></i> 노무 가동률</span><span><i style="background:#d97706"></i> 설비 가동률</span><span><i style="background:#dc2626"></i> 100% 기준선</span></div>`;
+}
+
+function switchProc(e, p){
+  document.querySelectorAll('#proc-tabs .tab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+  curProc = p;
+  drawProcChart();
+}
+
+function drawProcAvg(){
+  // 공정별 노무·설비 평균 막대
+  const stats = {};
+  PROCS.forEach(p => {
+    const sub = DATA.detail.filter(d => d['공정']===p);
+    stats[p] = {
+      lab: sub.reduce((s,d)=>s+d['노무율'],0)/sub.length,
+      eq:  sub.reduce((s,d)=>s+d['설비율'],0)/sub.length
+    };
+  });
+  const max = Math.max(1.0, ...Object.values(stats).flatMap(s=>[s.lab, s.eq]))*1.05;
+  let html = '';
+  PROCS.forEach(p => {
+    const s = stats[p];
+    const labW = s.lab/max*100;
+    const eqW = s.eq/max*100;
+    html += `
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--ogk-dark);margin-bottom:4px;">
+          <span>${p}</span>
+          <span style="color:var(--text-muted);font-size:11px;">노무 ${(s.lab*100).toFixed(0)}% · 설비 ${(s.eq*100).toFixed(0)}%</span>
+        </div>
+        <div style="height:10px;background:rgba(255,255,255,0.5);border-radius:5px;margin-bottom:3px;overflow:visible;position:relative;">
+          <div style="width:${labW}%;height:100%;background:#009AB8;border-radius:5px;"></div>
+          ${s.lab>1?'<div style="position:absolute;right:-5px;top:-2px;width:14px;height:14px;background:#dc2626;border-radius:50%;border:2px solid white;"></div>':''}
+        </div>
+        <div style="height:10px;background:rgba(255,255,255,0.5);border-radius:5px;overflow:visible;position:relative;">
+          <div style="width:${eqW}%;height:100%;background:#d97706;border-radius:5px;"></div>
+          ${s.eq>1?'<div style="position:absolute;right:-5px;top:-2px;width:14px;height:14px;background:#dc2626;border-radius:50%;border:2px solid white;"></div>':''}
+        </div>
+      </div>`;
+  });
+  html += `<div class="legend" style="margin-top:8px;"><span><i style="background:#009AB8"></i> 노무</span><span><i style="background:#d97706"></i> 설비</span><span><i style="background:#dc2626"></i> 100% 초과</span></div>`;
+  document.getElementById('proc-avg-bars').innerHTML = html;
+}
+
+function fillGapTables(){
+  function tbl(arr, isLab){
+    let html = '<thead><tr><th>월</th><th>공정</th><th class="num">노무</th><th class="num">설비</th><th class="num">갭</th></tr></thead><tbody>';
+    arr.forEach(r => {
+      const cls = isLab ? 'num-warn' : 'num-up';
+      html += `<tr><td>${r['월']}</td><td>${r['공정']}</td>
+        <td class="num ${r['노무율']>1?'num-up':''}">${(r['노무율']*100).toFixed(0)}%</td>
+        <td class="num ${r['설비율']>1?'num-up':''}">${(r['설비율']*100).toFixed(0)}%</td>
+        <td class="num ${cls}">${(r['갭']*100).toFixed(0)}%p</td></tr>`;
+    });
+    return html + '</tbody>';
+  }
+  document.getElementById('t-gap-lab').innerHTML = tbl(DATA.gap_top_lab, true);
+  document.getElementById('t-gap-eq').innerHTML = tbl(DATA.gap_top_eq, false);
+}
+
+function fillInsights(){
+  document.getElementById('insight-list').innerHTML = 
+    DATA.insights.map(t => `<li>${t}</li>`).join('');
+}
+
+drawHeatmap();
+drawProcChart();
+drawProcAvg();
+fillGapTables();
+fillInsights();
+</script>
+</body></html>
